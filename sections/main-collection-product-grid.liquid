@@ -118,8 +118,9 @@
       {%- endif -%}
 
       <div
-        class="product-grid-container{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+        class=" product-grid-container{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
         id="ProductGridContainer"
+         
         {% if settings.animations_reveal_on_scroll %}
           data-cascade
         {% endif %}
@@ -144,9 +145,9 @@
           >
             <div class="loading-overlay gradient"></div>
             <ul
-              id="product-grid"
+              id="product-grid "
               data-id="{{ section.id }}"
-              class="
+              class="AjaxinateLoop
                 grid product-grid grid--{{ section.settings.columns_mobile }}-col-tablet-down
                 grid--{{ section.settings.columns_desktop }}-col-desktop
                 {% if section.settings.quick_add == 'bulk' %} collection-quick-add-bulk{% endif %}
@@ -188,12 +189,23 @@
           </div>
         {%- endif -%}
       </div>
+      <div id="AjaxinatePagination">
+
+{% if paginate.next %}
+
+<a href="{{ paginate.next.url }}">Loading More</a>
+
+{% endif %}
+
+</div>
     </div>
   {%- endpaginate -%}
   {% if section.settings.image_shape == 'arch' %}
     {{ 'mask-arch.svg' | inline_asset_content }}
   {%- endif -%}
 </div>
+
+
 
 {% schema %}
 {
