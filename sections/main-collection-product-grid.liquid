@@ -37,7 +37,7 @@
 {%- endstyle -%}
 
 <div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}">
-  {%- paginate collection.products by section.settings.products_per_page -%}
+  {%- paginate collection.products by 250 -%}
     {% comment %} Sort is the first tabbable element when filter type is vertical {% endcomment %}
     {%- if section.settings.enable_sorting and section.settings.filter_type == 'vertical' -%}
       <facet-filters-form class="facets facets-vertical-sort page-width small-hide">
@@ -153,37 +153,113 @@
               "
             >
               {% assign skip_card_product_styles = false %}
+              {% assign rendered_product_count = 0 %}
+              {% assign featured_product_count = 0 %}
+              {% assign first_page_normal_product_count = 0 %}
+              {% assign hidden_normal_product_count = 0 %}
+
+              {%- if paginate.current_page == 1 -%}
+                {%- for product in collection.products -%}
+                  {%- if product.tags contains 'featured' or product.tags contains 'Featured' -%}
+                    {%- if featured_product_count >= 15 -%}
+                      {%- continue -%}
+                    {%- endif -%}
+                    {% assign featured_product_count = featured_product_count | plus: 1 %}
+                    {% assign rendered_product_count = rendered_product_count | plus: 1 %}
+                    {% assign lazy_load = false %}
+                    {%- if rendered_product_count > 2 -%}
+                      {%- assign lazy_load = true -%}
+                    {%- endif -%}
+                    <li
+                      class="grid__item{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+                      data-product-id="{{ product.id }}"
+                      data-featured-product="true"
+                      data-collection-grid-item
+                      {% if settings.animations_reveal_on_scroll %}
+                        data-cascade
+                        style="--animation-order: {{ rendered_product_count }};"
+                      {% endif %}
+                    >
+                      {% render 'card-product',
+                        card_product: product,
+                        media_aspect_ratio: section.settings.image_ratio,
+                        image_shape: section.settings.image_shape,
+                        show_secondary_image: section.settings.show_secondary_image,
+                        show_vendor: section.settings.show_vendor,
+                        show_rating: section.settings.show_rating,
+                        lazy_load: lazy_load,
+                        skip_styles: skip_card_product_styles,
+                        quick_add: section.settings.quick_add,
+                        section_id: section.id
+                      %}
+                    </li>
+                    {%- assign skip_card_product_styles = true -%}
+                  {%- endif -%}
+                {%- endfor -%}
+              {%- endif -%}
+
               {%- for product in collection.products -%}
-                {% assign lazy_load = false %}
-                {%- if forloop.index > 2 -%}
+                {%- unless product.tags contains 'featured' or product.tags contains 'Featured' -%}
+                  {%- if paginate.current_page == 1 -%}
+                    {%- if first_page_normal_product_count >= 5 -%}
+                      {% assign hidden_normal_product_count = hidden_normal_product_count | plus: 1 %}
+                      {% assign is_hidden_normal_product = true %}
+                    {%- else -%}
+                      {% assign first_page_normal_product_count = first_page_normal_product_count | plus: 1 %}
+                      {% assign is_hidden_normal_product = false %}
+                    {%- endif -%}
+                  {%- else -%}
+                    {% assign is_hidden_normal_product = false %}
+                  {%- endif -%}
+                  {% assign rendered_product_count = rendered_product_count | plus: 1 %}
+                  {% assign lazy_load = false %}
+                  {%- if rendered_product_count > 2 -%}
+                    {%- assign lazy_load = true -%}
+                  {%- endif -%}
+                  <li
+                    class="grid__item{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+                    data-product-id="{{ product.id }}"
+                    data-featured-product="false"
+                    data-collection-grid-item
+                    {% if is_hidden_normal_product %}
+                      data-infinite-scroll-hidden="true"
+                      hidden
+                    {% endif %}
+                    {% if settings.animations_reveal_on_scroll %}
+                      data-cascade
+                      style="--animation-order: {{ rendered_product_count }};"
+                    {% endif %}
+                  >
+                    {% render 'card-product',
+                      card_product: product,
+                      media_aspect_ratio: section.settings.image_ratio,
+                      image_shape: section.settings.image_shape,
+                      show_secondary_image: section.settings.show_secondary_image,
+                      show_vendor: section.settings.show_vendor,
+                      show_rating: section.settings.show_rating,
+                      lazy_load: lazy_load,
+                      skip_styles: skip_card_product_styles,
+                      quick_add: section.settings.quick_add,
+                      section_id: section.id
+                    %}
+                  </li>
                   {%- assign lazy_load = true -%}
-                {%- endif -%}
-                <li
-                  class="grid__item{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
-                  {% if settings.animations_reveal_on_scroll %}
-                    data-cascade
-                    style="--animation-order: {{ forloop.index }};"
-                  {% endif %}
-                >
-                  {% render 'card-product',
-                    card_product: product,
-                    media_aspect_ratio: section.settings.image_ratio,
-                    image_shape: section.settings.image_shape,
-                    show_secondary_image: section.settings.show_secondary_image,
-                    show_vendor: section.settings.show_vendor,
-                    show_rating: section.settings.show_rating,
-                    lazy_load: lazy_load,
-                    skip_styles: skip_card_product_styles,
-                    quick_add: section.settings.quick_add,
-                    section_id: section.id
-                  %}
-                </li>
-                {%- assign skip_card_product_styles = true -%}
+                  {%- assign skip_card_product_styles = true -%}
+                {%- endunless -%}
               {%- endfor -%}
             </ul>
 
-            {%- if paginate.pages > 1 -%}
-              {% render 'pagination', paginate: paginate, anchor: '' %}
+            {%- if paginate.pages > 1 or hidden_normal_product_count > 0 -%}
+              <div
+                class="pagination-wrapper"
+                data-page="{{ paginate.current_page }}"
+                data-collection-infinite-scroll-sentinel
+                style="min-height: 1px;"
+              >
+                {%- if paginate.pages > 1 -%}
+                  {% render 'pagination', paginate: paginate, anchor: '' %}
+                {%- endif -%}
+              </div>
             {%- endif -%}
           </div>
         {%- endif -%}
@@ -195,6 +271,65 @@
   {%- endif -%}
 </div>
 
+<script>
+  (() => {
+    const initCollectionInfiniteScroll = () => {
+      const grid = document.getElementById('product-grid');
+      const paginationWrapper = document.querySelector('#ProductGridContainer [data-collection-infinite-scroll-sentinel]');
+
+      if (!grid || !paginationWrapper || paginationWrapper.dataset.infiniteScrollInitialized === 'true') return;
+
+      paginationWrapper.dataset.infiniteScrollInitialized = 'true';
+
+      let isLoading = false;
+      const hidePaginationControls = () => {
+        paginationWrapper.querySelector('.pagination')?.setAttribute('hidden', '');
+        paginationWrapper.style.minHeight = '1px';
+      };
+
+      hidePaginationControls();
+
+      const revealNextProducts = () => {
+        isLoading = true;
+
+        grid
+          .querySelectorAll('[data-infinite-scroll-hidden="true"][data-featured-product="false"]')
+          .forEach((productItem, index) => {
+            if (index >= 20) return;
+
+            productItem.hidden = false;
+            productItem.removeAttribute('data-infinite-scroll-hidden');
+          });
+
+        if (!grid.querySelector('[data-infinite-scroll-hidden="true"][data-featured-product="false"]')) {
+          paginationWrapper.remove();
+        }
+
+        isLoading = false;
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        if (!entries[0].isIntersecting || isLoading) return;
+
+        revealNextProducts();
+      }, { rootMargin: '600px 0px' });
+
+      observer.observe(paginationWrapper);
+    };
+
+    initCollectionInfiniteScroll();
+    document.addEventListener('shopify:section:load', initCollectionInfiniteScroll);
+
+    const productGridContainer = document.getElementById('ProductGridContainer');
+
+    if (productGridContainer) {
+      new MutationObserver(() => {
+        window.requestAnimationFrame(initCollectionInfiniteScroll);
+      }).observe(productGridContainer, { childList: true });
+    }
+  })();
+</script>
+
 {% schema %}
 {
   "name": "t:sections.main-collection-product-grid.name",
@@ -203,10 +338,10 @@
     {
       "type": "range",
       "id": "products_per_page",
-      "min": 8,
+      "min": 20,
       "max": 36,
       "step": 4,
-      "default": 16,
+      "default": 20,
       "label": "t:sections.main-collection-product-grid.settings.products_per_page.label"
     },
     {
