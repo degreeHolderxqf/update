@@ -118,8 +118,9 @@
       {%- endif -%}
 
       <div
-        class="product-grid-container{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+        class=" product-grid-container{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
         id="ProductGridContainer"
+         
         {% if settings.animations_reveal_on_scroll %}
           data-cascade
         {% endif %}
@@ -144,9 +145,9 @@
           >
             <div class="loading-overlay gradient"></div>
             <ul
-              id="product-grid"
+              id="product-grid "
               data-id="{{ section.id }}"
-              class="
+              class="AjaxinateLoop
                 grid product-grid grid--{{ section.settings.columns_mobile }}-col-tablet-down
                 grid--{{ section.settings.columns_desktop }}-col-desktop
                 {% if section.settings.quick_add == 'bulk' %} collection-quick-add-bulk{% endif %}
@@ -264,71 +265,21 @@
           </div>
         {%- endif -%}
       </div>
+      <div id="AjaxinatePagination">
+
+{% if paginate.next %}
+
+<a href="{{ paginate.next.url }}">Loading More</a>
+
+{% endif %}
+
+</div>
     </div>
   {%- endpaginate -%}
   {% if section.settings.image_shape == 'arch' %}
     {{ 'mask-arch.svg' | inline_asset_content }}
   {%- endif -%}
 </div>
-
-<script>
-  (() => {
-    const initCollectionInfiniteScroll = () => {
-      const grid = document.getElementById('product-grid');
-      const paginationWrapper = document.querySelector('#ProductGridContainer [data-collection-infinite-scroll-sentinel]');
-
-      if (!grid || !paginationWrapper || paginationWrapper.dataset.infiniteScrollInitialized === 'true') return;
-
-      paginationWrapper.dataset.infiniteScrollInitialized = 'true';
-
-      let isLoading = false;
-      const hidePaginationControls = () => {
-        paginationWrapper.querySelector('.pagination')?.setAttribute('hidden', '');
-        paginationWrapper.style.minHeight = '1px';
-      };
-
-      hidePaginationControls();
-
-      const revealNextProducts = () => {
-        isLoading = true;
-
-        grid
-          .querySelectorAll('[data-infinite-scroll-hidden="true"][data-featured-product="false"]')
-          .forEach((productItem, index) => {
-            if (index >= 20) return;
-
-            productItem.hidden = false;
-            productItem.removeAttribute('data-infinite-scroll-hidden');
-          });
-
-        if (!grid.querySelector('[data-infinite-scroll-hidden="true"][data-featured-product="false"]')) {
-          paginationWrapper.remove();
-        }
-
-        isLoading = false;
-      };
-
-      const observer = new IntersectionObserver((entries) => {
-        if (!entries[0].isIntersecting || isLoading) return;
-
-        revealNextProducts();
-      }, { rootMargin: '600px 0px' });
-
-      observer.observe(paginationWrapper);
-    };
-
-    initCollectionInfiniteScroll();
-    document.addEventListener('shopify:section:load', initCollectionInfiniteScroll);
-
-    const productGridContainer = document.getElementById('ProductGridContainer');
-
-    if (productGridContainer) {
-      new MutationObserver(() => {
-        window.requestAnimationFrame(initCollectionInfiniteScroll);
-      }).observe(productGridContainer, { childList: true });
-    }
-  })();
-</script>
 
 {% schema %}
 {
