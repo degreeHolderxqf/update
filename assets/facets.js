@@ -243,9 +243,11 @@ class FacetFiltersForm extends HTMLElement {
   }
 
   static getSections() {
+    const productGrid = document.getElementById('product-grid') || document.getElementById('AjaxinateLoop');
+
     return [
       {
-        section: document.getElementById('product-grid').dataset.id,
+        section: productGrid.dataset.id,
       },
     ];
   }

@@ -37,7 +37,7 @@
 {%- endstyle -%}
 
 <div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}">
-  {%- paginate collection.products by 250 -%}
+  {%- paginate collection.products by 20 -%}
     {% comment %} Sort is the first tabbable element when filter type is vertical {% endcomment %}
     {%- if section.settings.enable_sorting and section.settings.filter_type == 'vertical' -%}
       <facet-filters-form class="facets facets-vertical-sort page-width small-hide">
@@ -118,9 +118,8 @@
       {%- endif -%}
 
       <div
-        class=" product-grid-container{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+        class="product-grid-container{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
         id="ProductGridContainer"
-         
         {% if settings.animations_reveal_on_scroll %}
           data-cascade
         {% endif %}
@@ -145,8 +144,9 @@
           >
             <div class="loading-overlay gradient"></div>
             <ul
-              id="product-grid "
+              id="AjaxinateLoop"
               data-id="{{ section.id }}"
+              data-collection-url="{{ collection.url }}"
               class="AjaxinateLoop
                 grid product-grid grid--{{ section.settings.columns_mobile }}-col-tablet-down
                 grid--{{ section.settings.columns_desktop }}-col-desktop
@@ -156,62 +156,50 @@
               {% assign skip_card_product_styles = false %}
               {% assign rendered_product_count = 0 %}
               {% assign featured_product_count = 0 %}
-              {% assign first_page_normal_product_count = 0 %}
-              {% assign hidden_normal_product_count = 0 %}
 
-              {%- if paginate.current_page == 1 -%}
-                {%- for product in collection.products -%}
-                  {%- if product.tags contains 'featured' or product.tags contains 'Featured' -%}
-                    {%- if featured_product_count >= 15 -%}
-                      {%- continue -%}
-                    {%- endif -%}
-                    {% assign featured_product_count = featured_product_count | plus: 1 %}
-                    {% assign rendered_product_count = rendered_product_count | plus: 1 %}
-                    {% assign lazy_load = false %}
-                    {%- if rendered_product_count > 2 -%}
-                      {%- assign lazy_load = true -%}
-                    {%- endif -%}
-                    <li
-                      class="grid__item{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
-                      data-product-id="{{ product.id }}"
-                      data-featured-product="true"
-                      data-collection-grid-item
-                      {% if settings.animations_reveal_on_scroll %}
-                        data-cascade
-                        style="--animation-order: {{ rendered_product_count }};"
-                      {% endif %}
-                    >
-                      {% render 'card-product',
-                        card_product: product,
-                        media_aspect_ratio: section.settings.image_ratio,
-                        image_shape: section.settings.image_shape,
-                        show_secondary_image: section.settings.show_secondary_image,
-                        show_vendor: section.settings.show_vendor,
-                        show_rating: section.settings.show_rating,
-                        lazy_load: lazy_load,
-                        skip_styles: skip_card_product_styles,
-                        quick_add: section.settings.quick_add,
-                        section_id: section.id
-                      %}
-                    </li>
-                    {%- assign skip_card_product_styles = true -%}
+              {%- for product in collection.products -%}
+                {%- if product.tags contains 'featured' or product.tags contains 'Featured' -%}
+                  {%- if paginate.current_page == 1 and featured_product_count >= 15 -%}
+                    {%- continue -%}
                   {%- endif -%}
-                {%- endfor -%}
-              {%- endif -%}
+                  {% assign featured_product_count = featured_product_count | plus: 1 %}
+                  {% assign rendered_product_count = rendered_product_count | plus: 1 %}
+                  {% assign lazy_load = false %}
+                  {%- if rendered_product_count > 2 -%}
+                    {%- assign lazy_load = true -%}
+                  {%- endif -%}
+                  <li
+                    class="grid__item{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+                    data-product-id="{{ product.id }}"
+                    data-featured-product="true"
+                    data-collection-grid-item
+                    {% if paginate.current_page == 1 %}
+                      data-initial-page-product="true"
+                    {% endif %}
+                    {% if settings.animations_reveal_on_scroll %}
+                      data-cascade
+                      style="--animation-order: {{ rendered_product_count }};"
+                    {% endif %}
+                  >
+                    {% render 'card-product',
+                      card_product: product,
+                      media_aspect_ratio: section.settings.image_ratio,
+                      image_shape: section.settings.image_shape,
+                      show_secondary_image: section.settings.show_secondary_image,
+                      show_vendor: section.settings.show_vendor,
+                      show_rating: section.settings.show_rating,
+                      lazy_load: lazy_load,
+                      skip_styles: skip_card_product_styles,
+                      quick_add: section.settings.quick_add,
+                      section_id: section.id
+                    %}
+                  </li>
+                  {%- assign skip_card_product_styles = true -%}
+                {%- endif -%}
+              {%- endfor -%}
 
               {%- for product in collection.products -%}
                 {%- unless product.tags contains 'featured' or product.tags contains 'Featured' -%}
-                  {%- if paginate.current_page == 1 -%}
-                    {%- if first_page_normal_product_count >= 5 -%}
-                      {% assign hidden_normal_product_count = hidden_normal_product_count | plus: 1 %}
-                      {% assign is_hidden_normal_product = true %}
-                    {%- else -%}
-                      {% assign first_page_normal_product_count = first_page_normal_product_count | plus: 1 %}
-                      {% assign is_hidden_normal_product = false %}
-                    {%- endif -%}
-                  {%- else -%}
-                    {% assign is_hidden_normal_product = false %}
-                  {%- endif -%}
                   {% assign rendered_product_count = rendered_product_count | plus: 1 %}
                   {% assign lazy_load = false %}
                   {%- if rendered_product_count > 2 -%}
@@ -222,9 +210,8 @@
                     data-product-id="{{ product.id }}"
                     data-featured-product="false"
                     data-collection-grid-item
-                    {% if is_hidden_normal_product %}
-                      data-infinite-scroll-hidden="true"
-                      hidden
+                    {% if paginate.current_page == 1 %}
+                      data-initial-page-product="true"
                     {% endif %}
                     {% if settings.animations_reveal_on_scroll %}
                       data-cascade
@@ -249,37 +236,189 @@
                 {%- endunless -%}
               {%- endfor -%}
             </ul>
-
-            {%- if paginate.pages > 1 or hidden_normal_product_count > 0 -%}
-              <div
-                class="pagination-wrapper"
-                data-page="{{ paginate.current_page }}"
-                data-collection-infinite-scroll-sentinel
-                style="min-height: 1px;"
-              >
-                {%- if paginate.pages > 1 -%}
-                  {% render 'pagination', paginate: paginate, anchor: '' %}
-                {%- endif -%}
-              </div>
-            {%- endif -%}
           </div>
+          {%- if paginate.next -%}
+            <div id="AjaxinatePagination" data-collection-infinite-scroll-sentinel style="min-height: 1px;">
+              <a href="{{ paginate.next.url }}">Loading More</a>
+            </div>
+          {%- endif -%}
         {%- endif -%}
       </div>
-      <div id="AjaxinatePagination">
-
-{% if paginate.next %}
-
-<a href="{{ paginate.next.url }}">Loading More</a>
-
-{% endif %}
-
-</div>
     </div>
   {%- endpaginate -%}
   {% if section.settings.image_shape == 'arch' %}
     {{ 'mask-arch.svg' | inline_asset_content }}
   {%- endif -%}
 </div>
+
+<script>
+  (() => {
+    window.initCollectionAjaxinate = async () => {
+      const grid = document.getElementById('AjaxinateLoop');
+      const pagination = document.getElementById('AjaxinatePagination');
+
+      if (!grid || pagination?.dataset.collectionAjaxinateInitialized === 'true' || grid?.dataset.collectionAjaxinatePreparing === 'true') return;
+
+      grid.dataset.collectionAjaxinatePreparing = 'true';
+
+      const seenProductIds = new Set();
+      let ajaxinate = null;
+      const parser = new DOMParser();
+      const pageSize = 20;
+      const featuredLimit = 15;
+
+      const getProductId = (item) => item?.dataset?.productId;
+      const isFeaturedProduct = (item) => item?.dataset?.featuredProduct === 'true';
+      const getNextUrl = (doc = document) => doc.querySelector('#AjaxinatePagination a[href]')?.href;
+      const getItems = (doc = document) => [...doc.querySelectorAll('#AjaxinateLoop [data-collection-grid-item]')];
+
+      const fetchPaginatedItems = async () => {
+        const items = getItems();
+        const fetchedUrls = new Set();
+        const collectedIds = new Set(items.map(getProductId).filter(Boolean));
+        let nextUrl = getNextUrl();
+        let featuredCount = items.filter(isFeaturedProduct).length;
+        let normalCount = items.filter((item) => !isFeaturedProduct(item)).length;
+
+        while (nextUrl && !fetchedUrls.has(nextUrl)) {
+          fetchedUrls.add(nextUrl);
+
+          const response = await fetch(nextUrl);
+          const html = await response.text();
+          const nextDocument = parser.parseFromString(html, 'text/html');
+          const nextItems = getItems(nextDocument);
+
+          nextItems.forEach((item) => {
+            const productId = getProductId(item);
+            if (!productId || collectedIds.has(productId)) return;
+            collectedIds.add(productId);
+
+            items.push(item);
+            if (isFeaturedProduct(item)) featuredCount += 1;
+            else normalCount += 1;
+          });
+
+          if (featuredCount >= featuredLimit && normalCount >= Math.max(0, pageSize - Math.min(featuredCount, featuredLimit))) {
+            break;
+          }
+
+          nextUrl = getNextUrl(nextDocument);
+        }
+
+        return items;
+      };
+
+      const prepareInitialProducts = async () => {
+        if (grid.dataset.featuredProductsPrepared === 'true') return;
+
+        const allItems = await fetchPaginatedItems();
+        const featuredItems = [];
+        const normalItems = [];
+        const collectedIds = new Set();
+
+        allItems.forEach((item) => {
+          const productId = getProductId(item);
+          if (!productId || collectedIds.has(productId)) return;
+
+          collectedIds.add(productId);
+          if (isFeaturedProduct(item)) {
+            featuredItems.push(item);
+            return;
+          }
+
+          normalItems.push(item);
+        });
+
+        const initialFeaturedItems = featuredItems.slice(0, featuredLimit);
+        const initialNormalItems = normalItems.slice(0, Math.max(0, pageSize - initialFeaturedItems.length));
+
+        grid.innerHTML = '';
+
+        [...initialFeaturedItems, ...initialNormalItems].forEach((item, index) => {
+          item.hidden = false;
+          item.removeAttribute('data-infinite-scroll-hidden');
+          item.dataset.initialPageProduct = 'true';
+          item.dataset.collectionAjaxinateProcessed = 'true';
+
+          if (item.hasAttribute('style') && item.style.getPropertyValue('--animation-order')) {
+            item.style.setProperty('--animation-order', index + 1);
+          }
+
+          seenProductIds.add(getProductId(item));
+          grid.appendChild(item);
+        });
+
+        grid.dataset.featuredProductsPrepared = 'true';
+      };
+
+      const cleanLoadedProducts = () => {
+        let loadedNormalCount = 0;
+
+        getItems().forEach((item) => {
+          if (item.dataset.collectionAjaxinateProcessed === 'true') {
+            return;
+          }
+
+          const productId = getProductId(item);
+
+          if (seenProductIds.has(productId)) {
+            item.remove();
+            return;
+          }
+
+          if (isFeaturedProduct(item)) {
+            item.remove();
+            return;
+          }
+
+          if (item.dataset.featuredProduct === 'false' && loadedNormalCount >= 20) {
+            item.remove();
+            return;
+          }
+
+          if (item.dataset.featuredProduct === 'false') loadedNormalCount += 1;
+          seenProductIds.add(productId);
+          item.dataset.collectionAjaxinateProcessed = 'true';
+        });
+      };
+
+      const startAjaxinate = () => {
+        if (ajaxinate || !pagination.querySelector('a[href]') || typeof Ajaxinate !== 'function') return;
+
+        ajaxinate = new Ajaxinate({
+          container: '#AjaxinateLoop',
+          pagination: '#AjaxinatePagination',
+          callback: cleanLoadedProducts,
+        });
+      };
+
+      if (pagination) pagination.dataset.collectionAjaxinateInitialized = 'true';
+
+      try {
+        await prepareInitialProducts();
+      } catch (error) {
+        console.error('Collection Ajaxinate setup failed', error);
+      } finally {
+        cleanLoadedProducts();
+        if (pagination) startAjaxinate();
+        delete grid.dataset.collectionAjaxinatePreparing;
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', window.initCollectionAjaxinate);
+    document.addEventListener('shopify:section:load', window.initCollectionAjaxinate);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const productGridContainer = document.getElementById('ProductGridContainer');
+
+      if (!productGridContainer) return;
+
+      new MutationObserver(() => {
+        window.requestAnimationFrame(window.initCollectionAjaxinate);
+      }).observe(productGridContainer, { childList: true });
+    });
+  })();
+</script>
 
 {% schema %}
 {
